@@ -287,6 +287,8 @@ func (self *T) FieldValues(item interface{}, convertFn func(interface{}) string)
 
 				if fieldName == "" {
 					fieldName = self.ColumnLike(field.Name)
+				} else if fieldName == "-" {
+					continue
 				}
 
 				// inline:bool

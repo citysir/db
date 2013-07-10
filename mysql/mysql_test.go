@@ -188,10 +188,11 @@ func TestAppend(t *testing.T) {
 			ignoreMe string
 			LastName string `ignorenil:"true"`
 			// Must ignore OtherName and use "name" as column.
-			OtherName string `field:"name",ignorenil:"true"`
+			OtherName string `field:"name" ignorenil:"true"`
 			// Should not get inserted.
-			nothing string
-		}{"nuff said", "", name, "nothing"})
+			nothing   string
+			MeNeither string `field:"-"`
+		}{"nuff said", "", name, "nothing", "Hallo!"})
 	}
 
 	total, _ = people.Count()

@@ -97,6 +97,8 @@ func GetStructFieldIndex(t reflect.Type, columnName string) []int {
 			if fieldName != "" {
 				if fieldName == columnName {
 					return []int{i}
+				} else if fieldName == "-" {
+					continue
 				}
 			}
 
