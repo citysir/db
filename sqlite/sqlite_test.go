@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/kr/pretty"
 	"math/rand"
@@ -102,7 +103,6 @@ func TestTruncate(t *testing.T) {
 
 // Appends maps and structs.
 func TestAppend(t *testing.T) {
-
 	sess, err := db.Open(wrapperName, settings)
 
 	if err != nil {
@@ -188,7 +188,6 @@ func TestAppend(t *testing.T) {
 
 // Tries to find and fetch rows.
 func TestFind(t *testing.T) {
-
 	var err error
 	var res db.Result
 
@@ -319,7 +318,6 @@ func TestFind(t *testing.T) {
 
 // Tests limit and offset.
 func TestLimitOffset(t *testing.T) {
-
 	var err error
 
 	sess, err := db.Open(wrapperName, settings)
@@ -397,7 +395,6 @@ func TestUpdate(t *testing.T) {
 
 // Tries to add test data and relations.
 func TestPopulate(t *testing.T) {
-
 	sess, err := db.Open(wrapperName, settings)
 
 	if err != nil {
@@ -737,4 +734,104 @@ func TestDataTypes(t *testing.T) {
 		}
 	}
 
+}
+
+func BenchmarkAppendRaw(b *testing.B) {
+	sess, err := db.Open(wrapperName, settings)
+
+	if err != nil {
+		b.Fatalf(err.Error())
+	}
+
+	defer sess.Close()
+
+	people := sess.ExistentCollection("people")
+	people.Truncate()
+
+	driver := sess.Driver().(*sql.DB)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := driver.Exec(`INSERT INTO people (name) VALUES("john")`)
+		if err != nil {
+			b.Fatalf(err.Error())
+		}
+	}
+}
+
+// Contributed by wei2912
+// See: https://github.com/gosexy/db/issues/20#issuecomment-20097801
+func BenchmarkAppendDbItem(b *testing.B) {
+	sess, err := db.Open(wrapperName, settings)
+
+	if err != nil {
+		b.Fatalf(err.Error())
+	}
+
+	defer sess.Close()
+
+	people := sess.ExistentCollection("people")
+	people.Truncate()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err = people.Append(db.Item{"name": "john"})
+		if err != nil {
+			b.Fatalf(err.Error())
+		}
+	}
+}
+
+// Contributed by wei2912
+// See: https://github.com/gosexy/db/issues/20#issuecomment-20167939
+// Applying the BEGIN and END transaction optimizations.
+func BenchmarkAppendDbItem_Transaction(b *testing.B) {
+	sess, err := db.Open(wrapperName, settings)
+
+	if err != nil {
+		b.Fatalf(err.Error())
+	}
+
+	defer sess.Close()
+
+	people := sess.ExistentCollection("people")
+	people.Truncate()
+
+	err = sess.Begin()
+	if err != nil {
+		b.Fatalf(err.Error())
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, err = people.Append(db.Item{"name": "john"})
+		if err != nil {
+			b.Fatalf(err.Error())
+		}
+	}
+
+	err = sess.End()
+	if err != nil {
+		b.Fatalf(err.Error())
+	}
+}
+
+func BenchmarkAppendStruct(b *testing.B) {
+	sess, err := db.Open(wrapperName, settings)
+
+	if err != nil {
+		b.Fatalf(err.Error())
+	}
+
+	defer sess.Close()
+
+	people := sess.ExistentCollection("people")
+	people.Truncate()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err = people.Append(struct{ Name string }{"john"})
+		if err != nil {
+			b.Fatalf(err.Error())
+		}
+	}
 }
